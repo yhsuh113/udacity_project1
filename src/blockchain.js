@@ -79,6 +79,7 @@ class Blockchain {
                self.height++;
                self.chain.push(block);
                resolve(block)
+               self.validateChain();
            }   catch (err) {
                reject(new Error(err))
            }
@@ -95,7 +96,11 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            resolve(`${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`);
+            try{
+                resolve(`${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`);
+            }   catch (err) {
+                reject('Error with messaging')
+            }
         });
     }
 
@@ -126,11 +131,12 @@ class Blockchain {
                 if (checkMessage) {
                     const newBlock = new BlockClass.Block({ owner: address, star: star });
                     resolve(await self._addBlock(newBlock));
+                    self.validateChain();
                 } else {
                     reject('Not correct signature');
                 }
             } else {
-                reject('Err');
+                reject('Message is older than 5 minutes');
             }
         });
     }
@@ -180,15 +186,19 @@ class Blockchain {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-            self.chain.forEach(async(block) => {
-                let data = await block.getBData()
-                if (data) {
-                    if (data.owner === address) {
-                        stars.push(data);
+            try {
+                self.chain.forEach(async(block) => {
+                    let data = await block.getBData()
+                    if (data) {
+                        if (data.owner === address) {
+                            stars.push(data);
+                        }
                     }
-                }
-        });
-        resolve(stars);
+            });
+            resolve(stars);
+            } catch (err) {
+                reject('Error in wallet address')
+            }
     });
 }
 
@@ -206,7 +216,8 @@ class Blockchain {
                 if(!await block.validate()) {
                     errorLog.push(`There is an error with the block ${block.height}`);
                 }
-                if(block.previousBlockHash !== self.chain[self.chain.height -1].hash) {
+                const previousBlock = self.chain[self.chain.length -1]
+                if(block.previousBlockHash !== previousBlock.hash) {
                     errorLog.push(`There is an error with previousBlockHash with the block ${block.height}`);
                 }
             })
