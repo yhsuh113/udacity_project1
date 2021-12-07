@@ -41,14 +41,13 @@ class Block {
             try {
             // Save in auxiliary variable the current block hash
             let currBlockHash = self.hash;
-            // assign NULL to hash value of block
-            self.hash = null;                                            
+            
+            let nullBlock = {...self, hash: null}
+            
             // Recalculate the hash of the Block
-            const newHash = SHA256(JSON.stringify(self)).toString()
-            // reassigning original hash value to the self blockchain's data
-            self.hash = currBlockHash;
+            const newHash = SHA256(JSON.stringify(nullBlock)).toString()
+            
             // Comparing if the hashes changed
-            console.log(currBlockHash, newHash );
             resolve(currBlockHash === newHash)
         }   catch (err) {
             reject(new Error(err))
@@ -69,15 +68,15 @@ class Block {
         // Getting the encoded data saved in the Block
         let self = this;
         return new Promise((resolve, reject) => {            
-            decodeData = hex2ascii(self.body);
             // Decoding the data to retrieve the JSON representation of the object
-            // Parse the data to an object to be retrieve.
+            let decodeData = hex2ascii(self.body);
+            // Parse the data to an object to be retrieved.
             const decoded = JSON.parse(decodeData);
             // Resolve with the data if the object isn't the Genesis block
             if (self.height > 0) {
                 resolve(decoded);
             } else {
-                reject(new Error(err));
+                reject('Error');
             }            
         });
     }
